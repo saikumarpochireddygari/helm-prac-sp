@@ -1,0 +1,31 @@
+helm install phoenix $CHART_URL --version $CHART_VERSION -f values.yaml
+
+#get values for a release
+helm get values phoenix
+
+#get notes for a release
+helm get notes phoenix
+
+#get notes for particular revision
+helm get notes phoenix --revision 1
+
+#get manifest for particular revision
+#helm get manifest phoenix --revision 1
+
+#shows all the histry of a release
+helm history phoenix
+
+#helm practice - Sai
+#done
+
+#how to rollback to certain version
+helm rollback _NAME_ _Version_
+
+#To keep history when doing uninstall coz after uninstall the history will be deleted along with uninstallm So in order to preserve history so that we can go back to a partical version at later we should keep history flag
+helm uninstall mydb --keep-history
+
+#helm ls
+helm ls
+
+#helm repo ls
+helm repo list

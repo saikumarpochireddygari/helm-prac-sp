@@ -1,0 +1,34 @@
+saikumarreddypochireddygari@SaiKumarReddys-MacBook-Pro Helm-Arize-opensource % helm install phoenix $CHART_URL --version $CHART_VERSION -f values.yaml --namespace arize
+Pulled: registry-1.docker.io/arizephoenix/phoenix-helm:4.0.24
+Digest: sha256:54a7275534fac9807ff982fae23c6733b5873af2e63fc6be49601e8efbb1eede
+NAME: phoenix
+LAST DEPLOYED: Mon Dec 22 14:51:24 2025
+NAMESPACE: arize
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+Thank you for installing phoenix-helm.
+
+Your release is named phoenix.
+
+Service is configured as NodePort.
+To access Phoenix:
+  export NODE_PORT=$(kubectl get --namespace arize -o jsonpath="{.spec.ports[1].nodePort}" services phoenix-svc)
+  export NODE_IP=$(kubectl get nodes --namespace arize -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+
+Admin credentials:
+  Username: admin
+  Password: To get the admin password run:
+    kubectl get secret --namespace arize phoenix-secret -o jsonpath="{.data.PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD}" | base64 -d
+
+To learn more about the release, try:
+  $ helm status phoenix
+  $ helm get all phoenix
+
+Resources:
+ - Phoenix docs: https://arize.com/docs/phoenix
+ - Configuration: https://arize.com/docs/phoenix/self-hosting/configuration
+ - Service mesh examples: See examples/ directory in the chart

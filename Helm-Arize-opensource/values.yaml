@@ -1,0 +1,14 @@
+server:
+  port: 6006
+
+auth:
+  defaultAdminPassword: "testpassword"
+
+database:
+  allocatedStorageGiB: 5
+  # postgres:
+  #   db: "testdbphoenix"
+  #   password: "testdbpassword"
+  #   port: 5432
+  #   user: "testuserphoenix"
+

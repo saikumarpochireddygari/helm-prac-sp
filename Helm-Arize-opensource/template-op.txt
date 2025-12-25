@@ -1,0 +1,501 @@
+
+
+Op:
+
+helm template phoenix $CHART_URL --version $CHART_VERSION -f values.yaml
+Pulled: registry-1.docker.io/arizephoenix/phoenix-helm:4.0.22
+Digest: sha256:8adcb143d5457193a9382771c50c3bfefb7336a558946592fbe648d8f1f0b060
+---
+# Source: phoenix-helm/charts/postgresql/templates/secureconfig.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: phoenix-postgresql
+  labels:
+    helm.sh/chart: postgresql-1.5.8
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: phoenix
+    app.kubernetes.io/version: "17.6"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  POSTGRES_PASSWORD: cG9zdGdyZXM=
+  POSTGRES_DB: cGhvZW5peA==
+  USERDB_USER: cGhvZW5peA==
+  USERDB_PASSWORD: cGhvZW5peA==
+---
+# Source: phoenix-helm/templates/phoenix/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: phoenix-secret
+  namespace: "default"
+  labels:
+    app: phoenix
+type: Opaque
+data:
+  PHOENIX_SECRET: UERjRVd5ZGVXQWFnMFcxMzFqTTdiM0gxdTY0cUkxbmM=
+  PHOENIX_ADMIN_SECRET: Nzc2MnI0WmFFV3Z6aHYyajNPMk9HVExaVHhsbFpGVHo=
+  PHOENIX_POSTGRES_PASSWORD: cG9zdGdyZXM=
+  PHOENIX_SMTP_PASSWORD: Q1ZWVXpnVWhac0tacHJxOVJsUG9xTVNVVm51a2JvRUs=
+  PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD: dGVzdHBhc3N3b3Jk
+---
+# Source: phoenix-helm/charts/postgresql/templates/scripts.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phoenix-postgresql-scripts
+  labels:
+    helm.sh/chart: postgresql-1.5.8
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: phoenix
+    app.kubernetes.io/version: "17.6"
+    app.kubernetes.io/managed-by: Helm
+data:
+  01-init-userdb.sh: |
+    #!/bin/sh
+    create_user()
+    {
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" -v USERDBNAME="$POSTGRES_DB" -v USERDBUSER="$USERDB_USER" -v USERDBPASSWORD="'$USERDB_PASSWORD'" <<-EOSQL
+      CREATE USER :USERDBUSER WITH PASSWORD :USERDBPASSWORD;
+      GRANT ALL PRIVILEGES ON DATABASE :USERDBNAME TO :USERDBUSER;
+      ALTER DATABASE :USERDBNAME OWNER TO :USERDBUSER;
+    EOSQL
+    }
+    set -e
+    if [ ! -z "$POSTGRES_DB" ] && [ ! -z "$USERDB_USER" ] && [ ! -z "$USERDB_PASSWORD" ]; then
+      create_user
+    fi
+  init.sh: |
+    #!/bin/sh
+    echo "Start initialization"
+    echo "Copy init-userdb script"
+    cp /initscripts/01-init-userdb.sh /scripts
+    if [ -d /extrascripts ]; then
+      echo "Copy extra scripts"
+      cp /extrascripts/* /scripts
+    fi
+    if [ -d /customscripts ]; then
+      echo "Copy custom scripts"
+      cp /customscripts/* /scripts
+    fi
+    if [ -d /customconfig ]; then
+      echo "Create postgres config"
+      cat /customconfig/* >>/configs/postgresql.conf
+    fi
+    if [ -d /extraconfigs ]; then
+      echo "Add extra configs to postgres config"
+      cat /extraconfigs/* >>/configs/postgresql.conf
+    fi
+    echo "Initialization done."
+---
+# Source: phoenix-helm/templates/phoenix/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phoenix-configmap
+  namespace: "default"
+  labels:
+    app: phoenix
+data:
+  # Authentication configuration
+  PHOENIX_ENABLE_AUTH: "true"
+  PHOENIX_DISABLE_BASIC_AUTH: "false"
+  PHOENIX_USE_SECURE_COOKIES: "false"
+  PHOENIX_COOKIES_PATH: "/"
+  PHOENIX_CSRF_TRUSTED_ORIGINS: ""
+  PHOENIX_ALLOWED_ORIGINS: ""
+  PHOENIX_ACCESS_TOKEN_EXPIRY_MINUTES: "60"
+  PHOENIX_PASSWORD_RESET_TOKEN_EXPIRY_MINUTES: "60"
+  PHOENIX_REFRESH_TOKEN_EXPIRY_MINUTES: "43200"
+
+  # OAuth2/OIDC Identity Provider Configuration
+
+  # LDAP Authentication Configuration
+
+  # Server configuration
+  PHOENIX_HOST: "::"
+  PHOENIX_PORT: "6006"
+  PHOENIX_GRPC_PORT: "4317"
+  PHOENIX_HOST_ROOT_PATH: ""
+  PHOENIX_WORKING_DIR: "/data"
+  PHOENIX_ROOT_URL: ""
+  PHOENIX_ENABLE_PROMETHEUS: "false"
+  PHOENIX_ALLOW_EXTERNAL_RESOURCES: "true"
+  PHOENIX_TELEMETRY_ENABLED: "true"
+  PHOENIX_MAX_SPANS_QUEUE_SIZE: "20000"
+
+  # Database configuration
+  PHOENIX_POSTGRES_HOST: "phoenix-postgresql"
+  PHOENIX_POSTGRES_PORT: "5432"
+  PHOENIX_POSTGRES_USER: "postgres"
+  PHOENIX_POSTGRES_DB: "phoenix"
+  PHOENIX_POSTGRES_AWS_IAM_TOKEN_LIFETIME_SECONDS: "840"
+  PHOENIX_SQL_DATABASE_SCHEMA: ""
+  PHOENIX_DATABASE_ALLOCATED_STORAGE_CAPACITY_GIBIBYTES: "5"
+  PHOENIX_DEFAULT_RETENTION_POLICY_DAYS: "0"
+
+  # SMTP configuration
+  PHOENIX_SMTP_HOSTNAME: ""
+  PHOENIX_SMTP_PORT: "587"
+  PHOENIX_SMTP_USERNAME: ""
+  PHOENIX_SMTP_MAIL_FROM: "noreply@arize.com"
+  PHOENIX_SMTP_VALIDATE_CERTS: "true"
+
+  # Logging
+  PHOENIX_LOGGING_MODE: "default"
+  PHOENIX_LOGGING_LEVEL: "info"
+  PHOENIX_DB_LOGGING_LEVEL: "warning"
+  PHOENIX_LOG_MIGRATIONS: "true"
+
+  # TLS configuration
+  PHOENIX_TLS_ENABLED: "false"
+  PHOENIX_TLS_ENABLED_FOR_GRPC: "false"
+  PHOENIX_TLS_ENABLED_FOR_HTTP: "false"
+  PHOENIX_TLS_CERT_FILE: ""
+  PHOENIX_TLS_KEY_FILE: ""
+  PHOENIX_TLS_KEY_FILE_PASSWORD: ""
+  PHOENIX_TLS_CA_FILE: ""
+  PHOENIX_TLS_VERIFY_CLIENT: "false"
+
+  # Instrumentation
+  PHOENIX_SERVER_INSTRUMENTATION_OTLP_TRACE_COLLECTOR_HTTP_ENDPOINT: ""
+  PHOENIX_SERVER_INSTRUMENTATION_OTLP_TRACE_COLLECTOR_GRPC_ENDPOINT: ""
+---
+# Source: phoenix-helm/charts/postgresql/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: phoenix-postgresql
+  labels:
+    helm.sh/chart: postgresql-1.5.8
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: phoenix
+    app.kubernetes.io/version: "17.6"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: postgres
+      protocol: TCP
+      name: postgres
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: phoenix
+---
+# Source: phoenix-helm/templates/phoenix/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: phoenix-svc
+  namespace: "default"
+spec:
+  type: NodePort
+  ports:
+    - name: phoenix-grpc
+      port: 4317
+    - name: phoenix-app
+      port: 6006
+    - name: phoenix-metrics
+      port: 9090
+  selector:
+    app: phoenix
+---
+# Source: phoenix-helm/templates/phoenix/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phoenix
+  namespace: "default"
+  labels:
+    app: phoenix
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: phoenix
+  template:
+    metadata:
+      labels:
+        app: phoenix
+    spec:
+      containers:
+        - name: phoenix
+          image: docker.io/arizephoenix/phoenix:version-12.24.0-nonroot
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          ports:
+            - containerPort: 6006
+            - containerPort: 9090
+            - containerPort: 4317
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 6006
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 6006
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 6006
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            timeoutSeconds: 1
+            failureThreshold: 30
+            successThreshold: 1
+          envFrom:
+            - configMapRef:
+                name: phoenix-configmap
+          env:
+            - name: PHOENIX_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-secret
+                  key: PHOENIX_SECRET
+            - name: PHOENIX_ADMIN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-secret
+                  key: PHOENIX_ADMIN_SECRET
+            - name: PHOENIX_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-secret
+                  key: PHOENIX_POSTGRES_PASSWORD
+            - name: PHOENIX_SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-secret
+                  key: PHOENIX_SMTP_PASSWORD
+            - name: PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-secret
+                  key: PHOENIX_DEFAULT_ADMIN_INITIAL_PASSWORD
+
+          volumeMounts:
+            - name: data
+              mountPath: "/data"
+
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+# Source: phoenix-helm/charts/postgresql/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: phoenix-postgresql
+  labels:
+    helm.sh/chart: postgresql-1.5.8
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: phoenix
+    app.kubernetes.io/version: "17.6"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  serviceName: phoenix-postgresql
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/instance: phoenix
+  template:
+    metadata:
+      annotations:
+        checksum/customconfig: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+        checksum/secureconfig: f8354edaff51291fd69ce894975950807c4feff1f5dcae2e9eb2510cfc636db1
+        checksum/customscripts: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+        checksum/scripts: eb34d49e200d466ea9cd6447638e7eedfead9baa0b58cc298ae144123e8d65da
+      labels:
+        app.kubernetes.io/name: postgresql
+        app.kubernetes.io/instance: phoenix
+    spec:
+      serviceAccountName: default
+      securityContext:
+        fsGroup: 999
+        supplementalGroups:
+        - 999
+      initContainers:
+        - name: postgresql-init
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 999
+            runAsNonRoot: true
+            runAsUser: 999
+          image: "docker.io/postgres:16"
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /initscripts
+              name: initscripts
+            - mountPath: /scripts
+              name: scripts
+            - mountPath: /configs
+              name: configs
+          command: [ "/initscripts/init.sh" ]
+      containers:
+        - name: postgresql
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 999
+            runAsNonRoot: true
+            runAsUser: 999
+          image: "docker.io/postgres:16"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-postgresql
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-postgresql
+                  key: POSTGRES_DB
+            - name: USERDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-postgresql
+                  key: USERDB_USER
+            - name: USERDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: phoenix-postgresql
+                  key: USERDB_PASSWORD
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pg"
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -h localhost
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+            successThreshold: 1
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -h localhost
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -h localhost
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /var/run
+              name: run
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-data
+            - mountPath: /docker-entrypoint-initdb.d
+              name: scripts
+            - mountPath: /etc/postgresql
+              name: configs
+      volumes:
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: scripts
+          emptyDir: {}
+        - name: configs
+          emptyDir: {}
+        - name: initscripts
+          configMap:
+            name: phoenix-postgresql-scripts
+            defaultMode: 0555
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+---
+# Source: phoenix-helm/templates/phoenix/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "phoenix-ingress"
+  namespace: "default"
+  labels:
+    app: phoenix
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: phoenix-svc
+            port:
+              number: 6006
+saikumarreddypochireddygari@SaiKumarReddys-MacBook-Pro Helm-Arize-opensource %

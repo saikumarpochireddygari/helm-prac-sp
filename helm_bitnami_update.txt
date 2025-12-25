@@ -1,0 +1,13 @@
+⚠ WARNING: Since August 28th, 2025, only a limited subset of images/charts are available for free.
+
+Subscribe to Bitnami Secure Images to receive continued support and security updates.
+
+More info at https://bitnami.com and https://github.com/bitnami/containers/issues/83267
+
+Solution:
+
+Append --set image.repository=bitnamilegacy/<ChartName> to your helm install command
+
+Example:
+
+helm install mydb bitnami/mysql --set image.repository=bitnamilegacy/mysql
