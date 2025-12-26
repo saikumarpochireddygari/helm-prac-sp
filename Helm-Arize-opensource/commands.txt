@@ -24,8 +24,25 @@ helm rollback _NAME_ _Version_
 #To keep history when doing uninstall coz after uninstall the history will be deleted along with uninstallm So in order to preserve history so that we can go back to a partical version at later we should keep history flag
 helm uninstall mydb --keep-history
 
-#helm ls
-helm ls
+#helm ls - gives no of active deployments
+helm ls 
 
-#helm repo ls
-helm repo list
+#helm repo ls - lists current repo tracked by helm
+helm repo list/ls
+
+#to create namespace while doing helm install we can use a flag called --create-namespace _VALUE_
+helm install phoenix $CHART_URL --version $CHART_VERSION -f values.yaml --create-namespace arize-ns-phoenix-installation
+
+#helm ls --namespace - To check installed apps in that namespace
+
+#Sometimes when we want to do upgrade or install, if we thought the install was done earlier so we can now upgrade it via cli command, but actually it isn't installed then upgrade will fail right, so in order to do aviod these scenarios we can do is upgrade --install
+helm upgrade --install phoenix $CHART_URL --version $CHART_VERSION -f values.yaml
+
+## Generate names for charts
+helm install bitnami/apache --generate-name --name-template "mywebserver-{{randAlpha 7 | lower}}"
+
+## Wait & Timeout - Generally, helm thinks that in install command it hits k8s api server with manifest and its responsibility is done after that it doesnt wait until pods are up and running. To help us here follow below command
+helm install bitnami/apache --generate-name --name-template "mywebserver-{{randAlpha 7 | lower}}" --wait --timeout 10m10s
+
+## Atomic install-if after 10 mins of waiting too pods arent up and running we can do is use atomic it will roll back to latest succesful previous run
+--atmoic --timeout 7m12s (--wait will be enabled by default)
