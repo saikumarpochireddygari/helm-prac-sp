@@ -46,3 +46,13 @@ helm install bitnami/apache --generate-name --name-template "mywebserver-{{randA
 
 ## Atomic install-if after 10 mins of waiting too pods arent up and running we can do is use atomic it will roll back to latest succesful previous run
 --atmoic --timeout 7m12s (--wait will be enabled by default)
+
+## Forceful upgrade
+- Some times, no .. always kube does upgrade if anything changes in the pods and only updated pods will get affected, but if we want everything to re-start what we can do is use --force flag so kube will create new deployment. Internally helm will delete exsisting deployment and create new one. 
+ --force
+
+
+## Command which gives us all values used for particular installation
+- helm get values mydb --all
+
+## After k8s deployment, release records are always stored in secrects.
