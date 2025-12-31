@@ -1,0 +1,13 @@
+# Creating First Chart
+## by default helm uses nginx as a default chart template and using it, it gives us first chart structure for us. We can also use other default chart templates for this. 
+
+cli: helm create _CHART_NAME_
+~ this creates 
+_CHART_NAME_ Folder:
+    ~ Chart.yaml : This is where meta data about chart exsist
+    ~ charts Folder : If our _CHART_NAME_ depends on other chart to get its job done, then thoose charts are pulled and stored inside of this folder
+    ~ templates : Here actual manifests etc will be there to deploy into k8
+    ~ values.yaml : these are the values file which contains default values that should go into templates folder. 
+
+# To install the above created Chart    
+cli: helm install myapp _CHART_NAME_ -f values.yml 
